@@ -1,0 +1,17 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DEVICE_TOKEN: ${DEVICE_TOKEN:-local-dev-token}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+    restart: unless-stopped
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    restart: unless-stopped

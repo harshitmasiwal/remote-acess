@@ -1,0 +1,22 @@
+name: remote_storage_bridge_mobile
+description: Flutter device agent for Remote Storage Bridge.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path: ^1.9.0
+  permission_handler: ^11.3.1
+  web_socket_channel: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
