@@ -48,7 +48,10 @@ class BridgeClient {
       'token': AppConfig.deviceToken,
     });
     try {
-      final channel = IOWebSocketChannel.connect(uri);
+      final channel = IOWebSocketChannel.connect(
+        uri,
+        pingInterval: const Duration(seconds: 15),
+      );
       _channel = channel;
       channel.stream.listen(
         (message) => unawaited(_onMessage(message)),

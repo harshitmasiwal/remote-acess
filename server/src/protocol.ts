@@ -29,12 +29,14 @@ export interface DeviceReadyMessage {
   deviceId: string;
   name?: string;
   platform?: string;
+  ip?: string;
 }
 
 export interface DeviceInfo {
   id: string;
   name?: string;
   platform?: string;
+  ip?: string;
   connectedAt: string;
   lastSeenAt: string;
 }

@@ -10,7 +10,7 @@ interface ConnectedDevice {
 export class DeviceRegistry {
   private readonly devices = new Map<string, ConnectedDevice>();
 
-  register(message: DeviceReadyMessage, socket: WebSocket): DeviceInfo {
+  register(message: DeviceReadyMessage, socket: WebSocket, ip?: string): DeviceInfo {
     const now = new Date().toISOString();
     const previous = this.devices.get(message.deviceId);
     previous?.socket.close(1000, "replaced by a newer connection");
@@ -18,11 +18,19 @@ export class DeviceRegistry {
       id: message.deviceId,
       name: message.name,
       platform: message.platform,
+      ip: ip ?? message.ip,
       connectedAt: now,
       lastSeenAt: now
     };
     this.devices.set(message.deviceId, { info, socket, pending: new Map() });
     return info;
+  }
+
+  setDeviceName(deviceId: string, name: string): boolean {
+    const current = this.devices.get(deviceId);
+    if (!current) return false;
+    current.info.name = name;
+    return true;
   }
 
   unregister(deviceId: string, socket: WebSocket): void {

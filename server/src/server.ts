@@ -58,6 +58,38 @@ app.delete("/api/devices/:id/files", (request, response) => void sendCommand(req
 app.post("/api/devices/:id/rename", (request, response) => void sendCommand(request, response, "RENAME", request.body));
 app.post("/api/devices/:id/directories", (request, response) => void sendCommand(request, response, "CREATE_DIRECTORY", request.body));
 
+function getMimeType(filePath: string): string {
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "jpg":
+    case "jpeg": return "image/jpeg";
+    case "png": return "image/png";
+    case "webp": return "image/webp";
+    case "gif": return "image/gif";
+    case "svg": return "image/svg+xml";
+    case "mp4": return "video/mp4";
+    case "pdf": return "application/pdf";
+    case "txt": return "text/plain";
+    case "json": return "application/json";
+    default: return "application/octet-stream";
+  }
+}
+
+app.patch("/api/devices/:id", (request, response) => {
+  const deviceId = request.params.id;
+  const name = request.body?.name;
+  if (typeof name !== "string" || !name.trim()) {
+    response.status(400).json({ error: "valid name required" });
+    return;
+  }
+  const ok = registry.setDeviceName(deviceId, name.trim());
+  if (!ok) {
+    response.status(404).json({ error: "device not found" });
+    return;
+  }
+  response.json({ ok: true, name: name.trim() });
+});
+
 app.get("/api/devices/:id/download", async (request, response) => {
   try {
     const deviceId = request.params.id;
@@ -65,8 +97,11 @@ app.get("/api/devices/:id/download", async (request, response) => {
     const path = validateRelativePath(request.query.path, false);
     let offset = 0;
     let started = false;
-    response.setHeader("Content-Type", "application/octet-stream");
-    response.setHeader("Content-Disposition", `attachment; filename="${path.split("/").pop() ?? "download"}"`);
+    const isInline = request.query.inline === "1" || request.query.inline === "true";
+    const mimeType = isInline ? getMimeType(path) : "application/octet-stream";
+    const filename = path.split("/").pop() ?? "download";
+    response.setHeader("Content-Type", mimeType);
+    response.setHeader("Content-Disposition", isInline ? "inline" : `attachment; filename="${filename}"`);
     while (true) {
       const result = await commands.execute(deviceId, "DOWNLOAD", { path, offset, chunkSize: 256 * 1024 });
       if (!result.ok) {
@@ -104,12 +139,13 @@ server.on("upgrade", (request, socket, head) => {
     socket.destroy();
     return;
   }
+  const clientIp = (request.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || request.socket.remoteAddress || "";
   webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-    webSocketServer.emit("connection", webSocket, deviceId);
+    webSocketServer.emit("connection", webSocket, deviceId, clientIp);
   });
 });
 
-webSocketServer.on("connection", (socket: WebSocket, deviceId: string) => {
+webSocketServer.on("connection", (socket: WebSocket, deviceId: string, clientIp?: string) => {
   let registered = false;
   socket.on("message", (raw) => {
     try {
@@ -119,7 +155,7 @@ webSocketServer.on("connection", (socket: WebSocket, deviceId: string) => {
           socket.close(1008, "first message must be ready");
           return;
         }
-        registry.register(message, socket);
+        registry.register(message, socket, clientIp);
         registered = true;
         socket.send(JSON.stringify({ type: "connected", deviceId, commands: COMMANDS }));
         return;

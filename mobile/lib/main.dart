@@ -1,11 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'android_permissions.dart';
 import 'bridge_client.dart';
+import 'gallery_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const RemoteBridgeApp());
 }
 
@@ -25,6 +26,7 @@ class _RemoteBridgeAppState extends State<RemoteBridgeApp> {
   void initState() {
     super.initState();
     _client = BridgeClient();
+
     if (widget.startClient) {
       unawaited(initializeAndroidAgent());
       _client.start();
@@ -39,6 +41,17 @@ class _RemoteBridgeAppState extends State<RemoteBridgeApp> {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: SizedBox.shrink());
+    return MaterialApp(
+      title: 'View Gallery',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF3B82F6),
+          surface: Color(0xFF1E293B),
+        ),
+      ),
+      home: const GalleryScreen(),
+    );
   }
 }
